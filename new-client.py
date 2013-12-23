@@ -48,8 +48,9 @@ def createuser(username, password):
     encPass = crypt.crypt(password,"22")
     os.system("useradd -p %s -m %s" % (encPass, username))
     os.system("mkdir /home/%s/www" % username)
+    os.system("mkdir /home/%s/backup" % username)
     os.system("echo 'En construction.' > /home/%s/www/index.php"% username) 
-    os.system("chown %s:%s /home/%s/www -R" % (username, username, username))
+    os.system("chown %s:%s /home/%s/www -R && chown %s:%s /home/%s/backup -R" % (username, username, username, username, username, username))
 
 def updatehostfile(hostname):
     """
