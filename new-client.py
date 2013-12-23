@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
+
 #    File name: new-client.py
 #    Author: Maxime Berthault (Maxou56800)
 #    Mail: contact@maxou56800.fr
@@ -14,8 +15,12 @@ import sys
 import string
 import random
 
-script_version = "0.1"
+from email.mime.text import MIMEText
+from subprocess import Popen, PIPE
+
+script_version = "0.2"
 date_last_modified = "23/12/2013"
+
 
 def displayheader():
     print "new-client.py v%s developped by Maxou56800.\nLast edit: %s\n" % ( script_version, date_last_modified )
@@ -41,7 +46,10 @@ def createuser(username, password):
     Create Unix User with password
     """
     encPass = crypt.crypt(password,"22")
-    os.system("useradd -p %s -m %s && mkdir /home/%s/www && echo 'En construction.' > /home/%s/www/index.php && chown %s:%s /home/%s/www -R" % (encPass, username, username, username, username, username, username ))
+    os.system("useradd -p %s -m %s" % (encPass, username))
+    os.system("mkdir /home/%s/www" % username)
+    os.system("echo 'En construction.' > /home/%s/www/index.php"% username) 
+    os.system("chown %s:%s /home/%s/www -R" % (username, username, username))
 
 def updatehostfile(hostname):
     """
@@ -102,6 +110,14 @@ def restartapache2():
     """
     os.system("/etc/init.d/apache2 restart")
 
+def sendmail(username, password, domains):
+    msg = MIMEText("-- Note --\n\tUsername: %s\n\tPassword: %s\n\tDomains: %s\n----\n" % ( username, password, domains ))
+    msg["From"] = "noreply@maxou56800.fr"
+    msg["To"] = "maxou56800@gmail.com"
+    msg["Subject"] = "New domain added to your server."
+    p = Popen(["/usr/sbin/sendmail", "-t"], stdin=PIPE)
+    p.communicate(msg.as_string())
+
 def main():
     if os.geteuid() != 0:
         exit("You need to have root privileges to run this script.\nPlease try again, with root privileges. Exiting.")
@@ -155,7 +171,15 @@ def main():
     restartapache2()
     print "[OK]"
 
+    # Send mail
+    def info_init():
+        print("[>] Send mail... "),
+    info_init()
+    sendmail(username, password, domains)
+    print "[OK]"
+
     print "\nAll be right."
 
 if __name__ == '__main__':
     main()
+
