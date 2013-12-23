@@ -17,9 +17,6 @@ import random
 script_version = "0.1"
 date_last_modified = "23/12/2013"
 
-
-#python new-client.py --client="pseudo" --domain="domaine,domaine2,domaine3"
-
 def displayheader():
     print "new-client.py v%s developped by Maxou56800.\nLast edit: %s\n" % ( script_version, date_last_modified )
 
