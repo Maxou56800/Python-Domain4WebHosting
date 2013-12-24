@@ -18,7 +18,7 @@ import random
 from email.mime.text import MIMEText
 from subprocess import Popen, PIPE
 
-script_version = "0.2"
+script_version = "0.3"
 date_last_modified = "23/12/2013"
 
 
@@ -109,7 +109,7 @@ def restartapache2():
     """
     Restart Apache2 service
     """
-    os.system("/etc/init.d/apache2 restart")
+    os.system("/etc/init.d/apache2 reload &")
 
 def sendmail(username, password, domains):
     msg = MIMEText("-- Note --\n\tUsername: %s\n\tPassword: %s\n\tDomains: %s\n----\n" % ( username, password, domains ))
@@ -165,12 +165,6 @@ def main():
         genvirtualhost(username, domain)
     print "[OK]"
 
-    # Create and enable virtualhost file
-    def info_init():
-        print("[>] Restart apache2 service... "),
-    info_init()
-    restartapache2()
-    print "[OK]"
 
     # Send mail
     def info_init():
@@ -178,6 +172,14 @@ def main():
     info_init()
     sendmail(username, password, domains)
     print "[OK]"
+
+    # Create and enable virtualhost file
+    def info_init():
+        print("[>] Restart apache2 service... "),
+    info_init()
+    restartapache2()
+    print "[OK]"
+
 
     print "\nAll be right."
 
