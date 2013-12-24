@@ -46,7 +46,7 @@ def createuser(username, password):
     Create Unix User with password
     """
     encPass = crypt.crypt(password,"22")
-    os.system("useradd -p %s -m %s" % (encPass, username))
+    os.system("/usr/sbin/useradd -p %s -m %s" % (encPass, username))
     os.system("mkdir /home/%s/www" % username)
     os.system("mkdir /home/%s/backup" % username)
     os.system("echo 'En construction.' > /home/%s/www/index.php"% username) 
@@ -103,7 +103,7 @@ def genvirtualhost(username, domain):
 </VirtualHost>""" % (domain, domain, username, username)
     outputfile.writelines(entry)
     outputfile.close()
-    os.system("a2ensite %s" % domain)
+    os.system("/usr/sbin/a2ensite %s" % domain)
 
 def restartapache2():
     """
