@@ -17,7 +17,7 @@ from email.mime.text import MIMEText
 from subprocess import Popen, PIPE
 
 script_version = "0.3"
-date_last_modified = "23/12/2013"
+date_last_modified = "24/12/2013"
 
 logs = ""
 
@@ -49,26 +49,26 @@ def createuser(username, password, domains):
     encPass = crypt.crypt(password,"22")
     try:
         pwd.getpwnam(username)
-        logs += "\nL'utilisateur existe déjà."       
+        logs += "\nThe user already exists."       
     except KeyError:
         os.system("/usr/sbin/useradd -p %s -m %s" % (encPass, username))
     for domain in domains:
         if os.path.exists("/home/%s/%s" % (username, domain)) == False:
             os.system("mkdir /home/%s/%s" % (username, domain))
         else:
-            logs += "\nLe dossier /home/%s/%s existe déjà." % (username, domain)
+            logs += "\n/home/%s/%s folder already exists." % (username, domain)
         if os.path.isfile("/home/%s/%s/index.php" % (username, domain)) == False:
-            os.system("echo 'En construction.' > /home/%s/%s/index.php" % (username, domain))
+            os.system("echo 'Under construction.' > /home/%s/%s/index.php" % (username, domain))
         else:
-            logs += "\nLe fichier /home/%s/%s/index.php existe déjà." % (username, domain)
+            logs += "\n/home/%s/%s/index.php file already exists." % (username, domain)
         if os.path.exists("/home/%s/backup" % username) == False:
             os.system("mkdir /home/%s/backup" % username)
         else:
-            logs += "\nLe dossier /home/%s/backup existe déjà." % username
+            logs += "\n/home/%s/backup folder already exists." % username
         if os.path.exists("/home/%s/backup/%s" % (username, domain)) == False:
             os.system("mkdir /home/%s/backup/%s" % (username, domain))
         else:
-            logs += "\nLe dossier /home/%s/backup/%s existe déjà." % (username, domain)
+            logs += "\n/home/%s/backup/%s folder already exists." % (username, domain)
         os.system("chown %s:%s /home/%s/%s -R && chown %s:%s /home/%s/backup -R" % (username, username, username, domain, username, username, username))
 
 def updatehostfile(hostname):
@@ -83,7 +83,7 @@ def updatehostfile(hostname):
         outputfile.writelines(entry)
         outputfile.close()
     else:
-        logs += "\nLe domaine %s est déjà renseigné dans /etc/hosts." % (hostname)
+        logs += "\nThe domain %s is already specified in /etc/hosts." % (hostname)
 
 def genvirtualhost(username, domain):
     """
@@ -130,7 +130,7 @@ def genvirtualhost(username, domain):
         outputfile.close()
         os.system("/usr/sbin/a2ensite %s" % domain)
     else:
-        logs += "\nLe fichier /etc/apache2/sites-available/%s existe déjà." % (domain)
+        logs += "\n/etc/apache2/sites-available/%s already exists." % (domain)
 
 def restartapache2():
     """
