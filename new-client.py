@@ -1,25 +1,25 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
 
-
 #    File name: new-client.py
 #    Author: Maxime Berthault (Maxou56800)
 #    Mail: contact@maxou56800.fr
 #    Date created: 23/12/2013
 #    Python Version: 2.7
 
-
 import os
 import crypt
 import sys
 import string
 import random
-
+import pwd
 from email.mime.text import MIMEText
 from subprocess import Popen, PIPE
 
 script_version = "0.3"
 date_last_modified = "23/12/2013"
+
+logs = ""
 
 
 def displayheader():
@@ -41,69 +41,96 @@ def pwgen(size=16, chars=string.ascii_letters + string.digits):
     """ Howto: password = pwgen() """
     return ''.join(random.choice(chars) for x in range(size))
 
-def createuser(username, password):
+def createuser(username, password, domains):
     """
     Create Unix User with password
     """
+    global logs
     encPass = crypt.crypt(password,"22")
-    os.system("/usr/sbin/useradd -p %s -m %s" % (encPass, username))
-    os.system("mkdir /home/%s/www" % username)
-    os.system("mkdir /home/%s/backup" % username)
-    os.system("echo 'En construction.' > /home/%s/www/index.php"% username) 
-    os.system("chown %s:%s /home/%s/www -R && chown %s:%s /home/%s/backup -R" % (username, username, username, username, username, username))
+    try:
+        pwd.getpwnam(username)
+        logs += "\nL'utilisateur existe déjà."       
+    except KeyError:
+        os.system("/usr/sbin/useradd -p %s -m %s" % (encPass, username))
+    for domain in domains:
+        if os.path.exists("/home/%s/%s" % (username, domain)) == False:
+            os.system("mkdir /home/%s/%s" % (username, domain))
+        else:
+            logs += "\nLe dossier /home/%s/%s existe déjà." % (username, domain)
+        if os.path.isfile("/home/%s/%s/index.php" % (username, domain)) == False:
+            os.system("echo 'En construction.' > /home/%s/%s/index.php" % (username, domain))
+        else:
+            logs += "\nLe fichier /home/%s/%s/index.php existe déjà." % (username, domain)
+        if os.path.exists("/home/%s/backup" % username) == False:
+            os.system("mkdir /home/%s/backup" % username)
+        else:
+            logs += "\nLe dossier /home/%s/backup existe déjà." % username
+        if os.path.exists("/home/%s/backup/%s" % (username, domain)) == False:
+            os.system("mkdir /home/%s/backup/%s" % (username, domain))
+        else:
+            logs += "\nLe dossier /home/%s/backup/%s existe déjà." % (username, domain)
+        os.system("chown %s:%s /home/%s/%s -R && chown %s:%s /home/%s/backup -R" % (username, username, username, domain, username, username, username))
 
 def updatehostfile(hostname):
     """
     Update Hosts file for add domain with local ipaddress
     """
+    global logs
     ipaddress = "127.0.0.1"
-    outputfile = open('/etc/hosts', 'a')
-    entry = "\n" + ipaddress + "\t" + hostname + "\n"
-    outputfile.writelines(entry)
-    outputfile.close()
+    if ('127.0.0.1\t%s' % hostname in open('/etc/hosts').read()) != True:
+        outputfile = open('/etc/hosts', 'a')
+        entry = "\n" + ipaddress + "\t" + hostname + "\n"
+        outputfile.writelines(entry)
+        outputfile.close()
+    else:
+        logs += "\nLe domaine %s est déjà renseigné dans /etc/hosts." % (hostname)
 
 def genvirtualhost(username, domain):
     """
     Create and enable VirtualHost in /etc/apache2/sites-available/
     """
-    outputfile = open('/etc/apache2/sites-available/%s' % domain, 'a')
-    entry = """<VirtualHost *:80>
-    ServerAdmin contact@maxou56800.fr
-    ServerName %s
+    global logs
+    if os.path.isfile("/etc/apache2/sites-available/%s" % domain) == False:
+        outputfile = open('/etc/apache2/sites-available/%s' % domain, 'a')
+        entry = """<VirtualHost *:80>
+        ServerAdmin contact@maxou56800.fr
+        ServerName %s
         ServerAlias www.%s
 
-    DocumentRoot /home/%s/www
-    <Directory />
-        Options FollowSymLinks
-        AllowOverride None
-    </Directory>
-    <Directory /home/%s/www/>
-        Options Indexes FollowSymLinks MultiViews
-        AllowOverride None
-        Order allow,deny
-        allow from all
-        Options -Indexes
-    </Directory>
+        DocumentRoot /home/%s/%s
+        <Directory />
+            Options FollowSymLinks
+            AllowOverride None
+        </Directory>
+        <Directory /home/%s/%s/>
+            Options Indexes FollowSymLinks MultiViews
+            AllowOverride None
+            Order allow,deny
+            allow from all
+            Options -Indexes
+        </Directory>
 
-    ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
-    <Directory "/usr/lib/cgi-bin">
-        AllowOverride None
-        Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
-        Order allow,deny
-        Allow from all
-    </Directory>
+        ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
+        <Directory "/usr/lib/cgi-bin">
+            AllowOverride None
+            Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
+            Order allow,deny
+            Allow from all
+        </Directory>
 
-    ErrorLog ${APACHE_LOG_DIR}/error.log
+        ErrorLog ${APACHE_LOG_DIR}/error.log
 
-    # Possible values include: debug, info, notice, warn, error, crit,
-    # alert, emerg.
-    LogLevel warn
+        # Possible values include: debug, info, notice, warn, error, crit,
+        # alert, emerg.
+        LogLevel warn
 
-    CustomLog ${APACHE_LOG_DIR}/access.log combined
-</VirtualHost>""" % (domain, domain, username, username)
-    outputfile.writelines(entry)
-    outputfile.close()
-    os.system("/usr/sbin/a2ensite %s" % domain)
+        CustomLog ${APACHE_LOG_DIR}/access.log combined
+    </VirtualHost>""" % (domain, domain, username, domain, username, domain)
+        outputfile.writelines(entry)
+        outputfile.close()
+        os.system("/usr/sbin/a2ensite %s" % domain)
+    else:
+        logs += "\nLe fichier /etc/apache2/sites-available/%s existe déjà." % (domain)
 
 def restartapache2():
     """
@@ -111,8 +138,8 @@ def restartapache2():
     """
     os.system("/etc/init.d/apache2 reload &")
 
-def sendmail(username, password, domains):
-    msg = MIMEText("-- Note --\n\tUsername: %s\n\tPassword: %s\n\tDomains: %s\n----\n" % ( username, password, domains ))
+def sendmail(username, password, domains, logs):
+    msg = MIMEText("-- Note --\n\tUsername: %s\n\tPassword: %s\n\tDomains: %s\n----\n-- Logs --\n%s" % ( username, password, domains, logs ))
     msg["From"] = "noreply@maxou56800.fr"
     msg["To"] = "maxou56800@gmail.com"
     msg["Subject"] = "New domain added to your server."
@@ -146,7 +173,7 @@ def main():
     def info_init():
         print("[>] Create Unix user... "),
     info_init()
-    createuser(username, password)
+    createuser(username, password, domains)
     print "[OK]"
 
     # Edit /etc/host file
@@ -165,14 +192,6 @@ def main():
         genvirtualhost(username, domain)
     print "[OK]"
 
-
-    # Send mail
-    def info_init():
-        print("[>] Send mail... "),
-    info_init()
-    sendmail(username, password, domains)
-    print "[OK]"
-
     # Create and enable virtualhost file
     def info_init():
         print("[>] Restart apache2 service... "),
@@ -180,9 +199,15 @@ def main():
     restartapache2()
     print "[OK]"
 
+    # Send mail
+    def info_init():
+        print("[>] Send mail... "),
+    info_init()
+    sendmail(username, password, domains, logs)
+    print "[OK]"
+
 
     print "\nAll be right."
 
 if __name__ == '__main__':
     main()
-
