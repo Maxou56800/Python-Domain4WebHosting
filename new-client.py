@@ -16,8 +16,8 @@ import pwd
 from email.mime.text import MIMEText
 from subprocess import Popen, PIPE
 
-script_version = "0.3"
-date_last_modified = "24/12/2013"
+script_version = "0.4"
+date_last_modified = "26/12/2013"
 
 logs = ""
 
@@ -96,36 +96,11 @@ def genvirtualhost(username, domain):
         ServerAdmin contact@maxou56800.fr
         ServerName %s
         ServerAlias www.%s
-
         DocumentRoot /home/%s/%s
-        <Directory />
-            Options FollowSymLinks
-            AllowOverride None
-        </Directory>
-        <Directory /home/%s/%s/>
-            Options Indexes FollowSymLinks MultiViews
-            AllowOverride None
-            Order allow,deny
-            allow from all
-            Options -Indexes
-        </Directory>
-
-        ScriptAlias /cgi-bin/ /usr/lib/cgi-bin/
-        <Directory "/usr/lib/cgi-bin">
-            AllowOverride None
-            Options +ExecCGI -MultiViews +SymLinksIfOwnerMatch
-            Order allow,deny
-            Allow from all
-        </Directory>
-
-        ErrorLog ${APACHE_LOG_DIR}/error.log
-
-        # Possible values include: debug, info, notice, warn, error, crit,
-        # alert, emerg.
+        ErrorLog /home/%s/apache_error.log
         LogLevel warn
-
         CustomLog ${APACHE_LOG_DIR}/access.log combined
-    </VirtualHost>""" % (domain, domain, username, domain, username, domain)
+    </VirtualHost>""" % (domain, domain, username, domain, username)
         outputfile.writelines(entry)
         outputfile.close()
         os.system("/usr/sbin/a2ensite %s" % domain)
